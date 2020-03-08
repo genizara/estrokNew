@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="com.estrok.estrokApp.mapper.MainMapper">
+    <select id="select1" resultType="string">
+        SELECT 1
+    </select>
+    
+    <insert id="insertStockCodes" parameterType="hashmap" >
+    	INSERT INTO
+    		es_stock_meta
+    		(
+    			stock_code
+    			, stock_name
+    			, reg_time
+    			, upt_time
+    		)
+    	VALUES
+    		(
+    			#{stockCode}
+    			, #{stockName}
+    			, UNIX_TIMESTAMP()
+    			, UNIX_TIMESTAMP()
+    		)
+    	ON DUPLICATE KEY
+    	UPDATE
+    			stock_name = VALUES(stock_name)
+    			, upt_time = UNIX_TIMESTAMP()
+    </insert>
+    
+    <insert id="insertHistoricData" parameterType="List">
+  
+    	INSERT INTO
+    		es_stock_historic_data
+    		(
+    			date
+    			,	close
+    			, 	start
+    			, 	high
+    			,	low
+    			, 	amount
+    			,   rs_52w
+    		)
+    	VALUES
+    		<foreach collection="list" item="data" separator=",">
+    		(
+    			#{data.date}
+    			, #{data.close}
+    			, #{data.start}
+    			, #{data.high}
+    			, #{data.low}
+    			, #{data.amount}
+    			, (
+    				select rs_52w 
+    				from 
+    				(
+	    				SELECT 
+	    					SUM(close) / COUNT(seq) AS rs_52w 
+	    				FROM 
+	    					es_stock_historic_data 
+	    				WHERE 
+	    					date &gt;= FROM_UNIXTIME (UNIX_TIMESTAMP(STR_TO_DATE( #{data.date}, '%Y%m%d')) -(365 * 60 * 60 * 24), '%Y%m%d')
+	    				AND 
+	    					date &lt;= #{data.date}
+	    			) a
+    			  )
+    		)
+    		</foreach>
+    	ON DUPLICATE KEY UPDATE
+    		amount = values(amount)
+    </insert>
+    
+    <insert id="insertEachHistoricData" parameterType="List">
+    	INSERT INTO
+    		es_each_stock_historic_data
+    		(
+    			code
+    			,	date
+    			,	close
+    			, 	start
+    			, 	high
+    			,	low
+    			, 	amount
+    			,	rs_52w
+    		)
+    	VALUES
+    		<foreach collection="list" item="data" separator=",">
+    		(
+    			#{data.code}
+    			, #{data.date}
+    			, #{data.close}
+    			, #{data.start}
+    			, #{data.high}
+    			, #{data.low}
+    			, #{data.amount}
+				, (
+    				select rs_52w 
+    				from 
+    				(
+	    				SELECT 
+	    					SUM(close) / COUNT(seq) AS rs_52w 
+	    				FROM 
+	    					es_each_stock_historic_data 
+	    				WHERE 
+	    					code = #{data.code}
+	    				AND
+	    					date &gt;= FROM_UNIXTIME (UNIX_TIMESTAMP(STR_TO_DATE( #{data.date}, '%Y%m%d')) -(365 * 60 * 60 * 24), '%Y%m%d')
+	    				AND 
+	    					date &lt;= #{data.date}
+	    			) a
+    			  )
+    		)
+    		</foreach>
+    	ON DUPLICATE KEY UPDATE
+    		amount = values(amount)
+    </insert>
+    
+    <select id="getCodeList" resultType="string">
+    	SELECT
+    		stock_code 
+    	FROM
+    		es_stock_meta
+    </select>
+    
+    <select id="getCodeList2" resultType="string">
+    	SELECT
+    		stock_code 
+    	FROM
+    		es_stock_meta esc
+    	LEFT OUTER JOIN 
+		(    	SELECT code FROM es_each_stock_historic_data GROUP BY CODE ) DATA1
+		ON esc.stock_code = DATA1.code
+		WHERE DATA1.code IS null
+    	ORDER BY stock_code ASC
+    </select>
+    
+</mapper>

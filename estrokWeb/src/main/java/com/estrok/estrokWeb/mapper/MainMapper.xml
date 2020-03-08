@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+    PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+    
+<mapper namespace="com.estrok.estrokWeb.mapper.MainMapper">
+    <select id="select1" resultType="string">
+        SELECT 1
+    </select>
+    
+    <select id="findStock" parameterType="hashmap" resultType="hashMap">
+    	SELECT 
+    		stock_code
+    		, stock_name
+    	FROM 
+    		es_stock_meta
+    	WHERE
+    		1=1
+    		<choose>
+    		<when test='search_type == "C"'>
+    		and
+	    		stock_code = #{search_value} 
+    		</when>
+    		<otherwise>
+    		and
+    			stock_name = #{search_value}	
+    		</otherwise>
+    		</choose>
+    	LIMIT 1
+    </select> 
+	<select id="getStockData" resultType="string">
+        SELECT 1
+    </select>
+    
+    <select id="getEachStockData" parameterType="hashmap" resultType="hashmap">
+    	SELECT 
+    		t.code
+    		,	t.date
+    		,	t.close
+    		,	t.start
+    		,	t.high
+    		,	t.low
+    		,	t.amount
+    		, 	t.each_rs_52w
+    		, 	t.all_rs_52w
+    		, 	t.rs as rs
+    		, 	t.each_rs_52w / t.all_rs_52w as long_rs
+    		, 	((rs / long_rs) - 1)*100 as mrs
+    	FROM (
+    		SELECT 
+		 	e.code
+		 	, e.date
+		 	, e.close
+		 	, e.start
+		 	, e.high
+		 	, e.low
+		 	, e.amount
+		 	, a.close as t_close
+		 	, e.rs_52w as each_rs_52w
+		 	, a.rs_52w AS all_rs_52w
+		 	, e.close / a.close as rs
+		 	, e.rs_52w / a.rs_52w as long_rs
+			FROM 
+			 	es_each_stock_historic_data e
+			LEFT OUTER
+			JOIN 
+			 	es_stock_historic_data a 
+			ON 
+			 	e.date = a.date
+			WHERE
+			 	e.code = #{code}
+			ORDER BY e.DATE DESC
+    	) t
+		
+    </select>
+    
+    <select id="getStockCodeList"  resultType="hashmap">
+    	SELECT 
+			seq
+			, stock_code
+			, stock_name
+		FROM 
+			es_stock_meta
+		ORDER BY 
+			stock_name DESC 
+    </select>
+</mapper>

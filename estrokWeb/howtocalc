@@ -1,0 +1,9 @@
+== 그래프 그리는 법
+
+RS = 종목주가 / 지수주가
+장기 RS = 종목52주주가 / 지수52주 주가
+MRS = ( RS / 장기RS -1 ) * 100
+
+
+== d3
+볼린져 밴드 소스 샘플 : https://observablehq.com/@d3/bollinger-bands
